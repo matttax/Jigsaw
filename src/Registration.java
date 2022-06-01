@@ -14,6 +14,7 @@ public class Registration extends JDialog {
     private int time;
 
     public Registration(boolean isFirst, DataOutputStream dos) {
+        time = 0;
         setSize(300, 300);
         setLayout(new BorderLayout());
 

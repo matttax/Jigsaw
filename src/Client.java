@@ -2,31 +2,53 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.*;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Client {
-    public static void main(String... args) throws IOException, InterruptedException {
-        Socket socket = new Socket("localhost", 5000);
-        DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
-        DataInputStream dis = new DataInputStream(socket.getInputStream());
-        boolean isFirst = dis.readBoolean();
-        Registration reg = new Registration(isFirst, dos);
-        reg.setVisible(true);
+    boolean isFirst;
+    public Socket socket;
+    DataOutputStream dos;
+    DataInputStream dis;
+    public String name;
+    public int time;
 
-        dis.readBoolean();
-
-
-        String name = reg.getPlayerName();
-        int time = reg.getTime();
-        dos.writeUTF(name);
-        if (isFirst)
+    public Client() {
+        try {
+            this.socket = new Socket("localhost", 5000);
+            dos = new DataOutputStream(socket.getOutputStream());
+            dis = new DataInputStream(socket.getInputStream());
+            int serverTime = dis.readInt();
+            isFirst = serverTime == 0;
+            Registration reg = new Registration(isFirst, dos);
+            reg.setVisible(true);
+            dis.readBoolean();
+            name = reg.getPlayerName();
+            time = isFirst ? reg.getTime() : serverTime;
+            dos.writeUTF(name);
             dos.writeInt(time);
+        } catch (IOException e) {
+            closeEverything();
+        }
+    }
 
-        time = dis.readInt();
-        int finalTime = time;
-        System.out.println(finalTime);
+    public void closeEverything() {
+        try {
+            if (socket != null) {
+                socket.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public static void main(String... args) throws IOException {
+        Client client = new Client();
+        if (!client.isFirst)
+            client.dos.writeUTF("start");
+        System.out.println(client.dis.readBoolean());
         EventQueue.invokeLater(() -> {
-            GameBox blocksGame = new GameBox(name, dis, dos, finalTime);
-            blocksGame.setTitle(name);
+            GameBox blocksGame = new GameBox(client);
+            blocksGame.setTitle(client.name);
             blocksGame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
             blocksGame.setVisible(true);
         });

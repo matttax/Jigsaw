@@ -3,9 +3,7 @@ import javax.swing.Timer;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Rectangle2D;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 
 class Playground extends JComponent {
     boolean win;
@@ -14,8 +12,8 @@ class Playground extends JComponent {
     double widthIndent;
     double heightIndent;
 
-    DataOutputStream output;
-    DataInputStream input;
+    private final DataInputStream input;
+    private final DataOutputStream output;
     String name;
     Blocks blocks;
     private Point previousPoint;
@@ -25,15 +23,19 @@ class Playground extends JComponent {
     JLabel figuresPlacedLabel = new JLabel("Figures placed: 0");
     JLabel fieldCoveredLabel = new JLabel("Field covered: 0%");
     JLabel timerLabel = new JLabel("Time: 00:00");
-    Timer timer = new Timer(1000, e -> {
-        timerLabel.setText("Time: " + blocks.seconds);
-        if (blocks.seconds == 0) {
-            try {
-                output.writeInt(blocks.getFiguresPlaced());
-                output.writeDouble(blocks.getFieldCovered());
-                win = input.readBoolean();
-            } catch (IOException ex) {
-                ex.printStackTrace();
+    Timer timer = new Timer(1000, new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            timerLabel.setText("Time: " + blocks.seconds);
+            if (blocks.seconds == 0) {
+                try {
+                    output.writeUTF("placed" + blocks.getFiguresPlaced());
+                    output.writeUTF("covered" + blocks.getFieldCovered());
+                    win = input.readBoolean();
+                    timer.stop();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
             }
         }
     });
@@ -41,13 +43,12 @@ class Playground extends JComponent {
     /**
      * Component shows the game process graphically.
      */
-    Playground(String name, DataInputStream input, DataOutputStream output, int time) {
+    Playground(Client client) {
         win = false;
-        this.output = output;
-        this.input = input;
-        this.name = name;
-        blocks = new Blocks();
-        blocks.seconds = time;
+        this.input = client.dis;
+        this.output = client.dos;
+        blocks = new Blocks(client);
+        blocks.seconds = client.time;
         this.addMouseListener(new Playground.ClickListener());
         this.addMouseMotionListener(new Playground.DragListener());
         this.addMouseListener(new Playground.ReleaseListener());

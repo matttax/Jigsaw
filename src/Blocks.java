@@ -1,7 +1,22 @@
 import javax.swing.*;
-import java.util.Random;
+import java.io.IOException;
+import java.util.Arrays;
 
 public class Blocks {
+    Client client;
+    /**
+     * Class stores information about field and current figure state.
+     */
+    public Blocks(Client client) {
+        this.client = client;
+        seconds = 30;
+        cells = new int[9][9];
+        figureMatrix = getMatrix();
+        figuresPlaced = 0;
+        fieldCovered = 0;
+        timer.start();
+    }
+
     private int figuresPlaced;
     private double fieldCovered;
     public int seconds;
@@ -16,21 +31,7 @@ public class Blocks {
         return fieldCovered;
     }
 
-    Timer timer = new Timer(1000, e -> {
-        seconds--;
-    });
-
-    /**
-     * Class stores information about field and current figure state.
-     */
-    public Blocks() {
-        seconds = 30;
-        cells = new int[9][9];
-        figureMatrix = generateMatrix();
-        figuresPlaced = 0;
-        fieldCovered = 0;
-        timer.start();
-    }
+    Timer timer = new Timer(1000, e -> seconds--);
 
     /**
      * @return Field cells map.
@@ -61,7 +62,7 @@ public class Blocks {
             }
         }
         figuresPlaced++;
-        updateFigureMatrix();
+        figureMatrix = getMatrix();
     }
 
     /**
@@ -79,48 +80,19 @@ public class Blocks {
         timer.restart();
     }
 
-    /**
-     * Generates new figure.
-     */
-    private void updateFigureMatrix() {
-        figureMatrix = generateMatrix();
-    }
-
-    private int[][] generateMatrix() {
-        return switch (Math.abs(new Random().nextInt()) % 31) {
-            // All possible figures.
-            case 0  -> new int[][]{{1, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-            case 1  -> new int[][]{{1, 1, 0}, {1, 0, 0}, {1, 0, 0}};
-            case 2  -> new int[][]{{1, 0, 0}, {1, 1, 1}, {0, 0, 0}};
-            case 3  -> new int[][]{{0, 1, 0}, {0, 1, 0}, {1, 1, 0}};
-            case 4  -> new int[][]{{1, 1, 1}, {0, 0, 1}, {0, 0, 0}};
-            case 5  -> new int[][]{{1, 1, 0}, {0, 1, 0}, {0, 1, 0}};
-            case 6  -> new int[][]{{0, 0, 1}, {1, 1, 1}, {0, 0, 0}};
-            case 7  -> new int[][]{{1, 0, 0}, {1, 0, 0}, {1, 1, 0}};
-            case 8  -> new int[][]{{1, 1, 1}, {1, 0, 0}, {0, 0, 0}};
-            case 9  -> new int[][]{{1, 0, 0}, {1, 1, 0}, {0, 1, 0}};
-            case 10 -> new int[][]{{0, 1, 1}, {1, 1, 0}, {0, 0, 0}};
-            case 11 -> new int[][]{{0, 1, 0}, {1, 1, 0}, {1, 0, 0}};
-            case 12 -> new int[][]{{1, 1, 0}, {0, 1, 1}, {0, 0, 0}};
-            case 13 -> new int[][]{{1, 0, 0}, {1, 0, 0}, {1, 1, 1}};
-            case 14 -> new int[][]{{1, 1, 1}, {0, 0, 1}, {0, 0, 1}};
-            case 15 -> new int[][]{{1, 1, 1}, {1, 0, 0}, {1, 0, 0}};
-            case 16 -> new int[][]{{0, 0, 1}, {0, 0, 1}, {1, 1, 1}};
-            case 17 -> new int[][]{{0, 1, 0}, {0, 1, 0}, {1, 1, 1}};
-            case 18 -> new int[][]{{1, 1, 1}, {0, 1, 0}, {0, 1, 0}};
-            case 19 -> new int[][]{{1, 0, 0}, {1, 1, 1}, {1, 0, 0}};
-            case 20 -> new int[][]{{0, 0, 1}, {1, 1, 1}, {0, 0, 1}};
-            case 21 -> new int[][]{{1, 1, 1}, {0, 0, 0}, {0, 0, 0}};
-            case 22 -> new int[][]{{1, 0, 0}, {1, 0, 0}, {1, 0, 0}};
-            case 23 -> new int[][]{{1, 1, 0}, {1, 0, 0}, {0, 0, 0}};
-            case 24 -> new int[][]{{1, 1, 0}, {0, 1, 0}, {0, 0, 0}};
-            case 25 -> new int[][]{{1, 0, 0}, {1, 1, 0}, {0, 0, 0}};
-            case 26 -> new int[][]{{0, 1, 0}, {1, 1, 0}, {1, 0, 0}};
-            case 27 -> new int[][]{{0, 1, 0}, {1, 1, 1}, {0, 0, 0}};
-            case 28 -> new int[][]{{1, 1, 1}, {0, 1, 0}, {0, 0, 0}};
-            case 29 -> new int[][]{{1, 0, 0}, {1, 1, 0}, {1, 0, 0}};
-            case 30 -> new int[][]{{0, 1, 0}, {1, 1, 0}, {0, 1, 0}};
-            default -> null;
-        };
+    private int[][] getMatrix() {
+        int[][] matrix = new int[3][3];
+        try {
+            client.dos.writeUTF("fig");
+            byte[] byteMatrix = client.dis.readNBytes(9);
+            for (int i = 0, b = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++, b++) {
+                    matrix[i][j] = byteMatrix[b];
+                }
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        return matrix;
     }
 }
